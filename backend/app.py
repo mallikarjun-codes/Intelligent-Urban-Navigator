@@ -13,7 +13,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # type: ig
 
 # Import your safety score function
 def get_safety_score(lat, lng):
-    overpass_url = "http://overpass-api.de/api/interpreter"
+    overpass_url = "https://overpass.kumi.systems/api/interpreter"
     overpass_query = f"""
     [out:json];
     (
@@ -42,7 +42,11 @@ def get_safety_score(lat, lng):
         }
     except Exception as e:
         print(f"Safety API Error: {e}")
-        return {"score": 0, "analysis": "Error", "details": "Could not calculate safety data."}
+        return {
+            "score": 55,
+            "analysis": "Estimated",
+            "details": "Live safety data unavailable; showing baseline score."
+        }
 
 
 def get_live_weather(lat, lng):
@@ -151,12 +155,17 @@ def geocode_place(name, lat=None, lng=None):
         if len(coords) < 2:
             return None
         props = feature.get("properties", {})
-        return {
+        place = {
             "name": props.get("name") or name,
             "lat": coords[1],
             "lng": coords[0],
             "address": props.get("street") or props.get("city") or props.get("state"),
         }
+        if lat is not None and lng is not None:
+            distance = haversine_distance_m(lat, lng, place["lat"], place["lng"])
+            if distance > 25000:
+                return None
+        return place
     except Exception as ge:
         print(f"Geocoder failed for {name}: {ge}")
         return None
