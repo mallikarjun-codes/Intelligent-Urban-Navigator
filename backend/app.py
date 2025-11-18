@@ -2,7 +2,10 @@ import os
 import json
 import math
 import time
-from flask import Flask, jsonify, request
+import uuid
+import hashlib
+from functools import wraps
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -13,7 +16,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # type: ig
 
 # Import your safety score function
 def get_safety_score(lat, lng):
-    overpass_url = "https://overpass.kumi.systems/api/interpreter"
+    overpass_url = "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
     overpass_query = f"""
     [out:json];
     (
@@ -100,6 +103,8 @@ DATA_DIR.mkdir(exist_ok=True)
 REVIEW_FILE = DATA_DIR / "review_samples.json"
 GEMS_FILE = DATA_DIR / "hidden_gems.json"
 PROGRESS_FILE = DATA_DIR / "gem_progress.json"
+USERS_FILE = DATA_DIR / "users.json"
+AUTH_SALT = os.getenv("AUTH_SALT", "kyc-default-salt")
 
 
 def load_json_file(path: Path, default):
@@ -118,11 +123,140 @@ def load_json_file(path: Path, default):
 review_samples = load_json_file(REVIEW_FILE, {})
 hidden_gems = load_json_file(GEMS_FILE, [])
 progress_data = load_json_file(PROGRESS_FILE, {"users": {}})
+users_data = load_json_file(USERS_FILE, {"users": []})
 progress_lock = Lock()
 sentiment_analyzer = SentimentIntensityAnalyzer()
 VIBE_CACHE_SECONDS = 900
 vibe_cache = {}
 hidden_gems_map = {gem["id"]: gem for gem in hidden_gems}
+active_sessions = {}
+user_index = {user["id"]: user for user in users_data.get("users", [])}
+
+
+def save_users_file():
+    with USERS_FILE.open("w", encoding="utf-8") as fh:
+        json.dump(users_data, fh, indent=2)
+
+
+def hash_password(password: str) -> str:
+    salted = f"{password}{AUTH_SALT}"
+    return hashlib.sha256(salted.encode("utf-8")).hexdigest()
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    return hash_password(password) == hashed
+
+
+def get_user_by_email(email: str):
+    if not email:
+        return None
+    cleaned = email.lower().strip()
+    for user in users_data.get("users", []):
+        if user.get("email", "").lower() == cleaned:
+            return user
+    return None
+
+
+def get_user_by_id(user_id: str):
+    if not user_id:
+        return None
+    return user_index.get(user_id)
+
+
+def create_user(name: str, email: str, password: str):
+    user = {
+        "id": str(uuid.uuid4()),
+        "name": name.strip(),
+        "email": email.lower().strip(),
+        "password_hash": hash_password(password),
+    }
+    users_data.setdefault("users", []).append(user)
+    user_index[user["id"]] = user
+    save_users_file()
+    return user
+
+
+def create_session(user_id: str):
+    token = str(uuid.uuid4())
+    active_sessions[token] = user_id
+    return token
+
+
+def extract_token():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header:
+        return None
+    if auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return auth_header.strip()
+
+
+def require_auth(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        token = extract_token()
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+        user_id = active_sessions.get(token)
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        g.current_user = user
+        g.current_token = token
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@app.route("/api/auth/register", methods=["POST"])
+def register_user_route():
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    if not name or not email or not password:
+        return jsonify({"error": "Name, email, and password are required."}), 400
+    if get_user_by_email(email):
+        return jsonify({"error": "Email already registered."}), 409
+    user = create_user(name, email, password)
+    token = create_session(user["id"])
+    return jsonify({
+        "token": token,
+        "user": {"id": user["id"], "name": user["name"], "email": user["email"]},
+    })
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def login_user_route():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    if not email or not password:
+        return jsonify({"error": "Email and password are required."}), 400
+    user = get_user_by_email(email)
+    if not user or not verify_password(password, user.get("password_hash", "")):
+        return jsonify({"error": "Invalid credentials."}), 401
+    token = create_session(user["id"])
+    return jsonify({
+        "token": token,
+        "user": {"id": user["id"], "name": user["name"], "email": user["email"]},
+    })
+
+
+@app.route("/api/auth/me", methods=["GET"])
+@require_auth
+def get_profile():
+    user = g.current_user
+    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+@require_auth
+def logout_user():
+    token = g.get("current_token")
+    if token and token in active_sessions:
+        active_sessions.pop(token, None)
+    return jsonify({"status": "ok"})
 
 # --- AI CONFIGURATION ---
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
@@ -349,10 +483,14 @@ def get_user_progress(user_id: str):
 
 def compute_leaderboard():
     with progress_lock:
-        entries = [
-            {"userId": uid, "count": len(data.get("unlocked", []))}
-            for uid, data in progress_data.get("users", {}).items()
-        ]
+        entries = []
+        for uid, data in progress_data.get("users", {}).items():
+            user = get_user_by_id(uid)
+            entries.append({
+                "userId": uid,
+                "name": user.get("name") if user else "Explorer",
+                "count": len(data.get("unlocked", []))
+            })
     entries.sort(key=lambda item: item["count"], reverse=True)
     return entries[:5]
 
@@ -518,13 +656,9 @@ def handle_vibe():
 
 @app.route('/api/gems', methods=['GET'])
 def list_gems():
-    user_id = request.args.get("userId")
-    unlocked = []
-    badges = []
-    if user_id:
-        profile = get_user_progress(user_id)
-        unlocked = profile.get("unlocked", [])
-        badges = profile.get("badges", [])
+    profile = get_user_progress(g.current_user["id"])
+    unlocked = profile.get("unlocked", [])
+    badges = profile.get("badges", [])
     return jsonify({
         "gems": hidden_gems,
         "unlocked": unlocked,
@@ -540,7 +674,6 @@ def gems_leaderboard():
 @app.route('/api/gems/unlock', methods=['POST'])
 def unlock_gem():
     data = request.get_json() or {}
-    user_id = data.get("userId") or "guest"
     coords = data.get("coords") or {}
     lat = coords.get("lat")
     lng = coords.get("lng")
@@ -558,7 +691,7 @@ def unlock_gem():
     if not candidate:
         return jsonify({"error": "No hidden gem nearby"}), 404
 
-    profile = get_user_progress(user_id)
+    profile = get_user_progress(g.current_user["id"])
     already = candidate["id"] in profile.get("unlocked", [])
     if not already:
         profile["unlocked"].append(candidate["id"])
