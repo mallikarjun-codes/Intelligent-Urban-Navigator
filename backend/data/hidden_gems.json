@@ -1,0 +1,48 @@
+[
+  {
+    "id": "gem_fort_stepwell",
+    "name": "Belagavi Fort Stepwell",
+    "lat": 15.86258,
+    "lng": 74.52319,
+    "radius_m": 25,
+    "badge": "Heritage Scout",
+    "hint": "Find the ancient stone well tucked behind the fort ramparts."
+  },
+  {
+    "id": "gem_midnight_dosa",
+    "name": "Midnight Dosa Cart",
+    "lat": 15.84031,
+    "lng": 74.49872,
+    "radius_m": 20,
+    "badge": "Night Owl",
+    "hint": "Open only after 10PM near College Road signal."
+  },
+  {
+    "id": "gem_whispering_lake",
+    "name": "Whispering Lake Deck",
+    "lat": 15.86792,
+    "lng": 74.47611,
+    "radius_m": 30,
+    "badge": "Calm Seeker",
+    "hint": "A tiny wooden deck overlooking the lake's north shore."
+  },
+  {
+    "id": "gem_old_banyan_library",
+    "name": "Old Banyan Library",
+    "lat": 15.84844,
+    "lng": 74.51288,
+    "radius_m": 18,
+    "badge": "Book Wanderer",
+    "hint": "Look for the small reading room under the banyan shade."
+  },
+  {
+    "id": "gem_spice_market_alley",
+    "name": "Spice Market Alley",
+    "lat": 15.85401,
+    "lng": 74.50576,
+    "radius_m": 22,
+    "badge": "Urban Explorer",
+    "hint": "An aromatic lane parallel to Ganpat Galli."
+  }
+]
+

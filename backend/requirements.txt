@@ -1,0 +1,7 @@
+Flask
+flask-cors
+google-generativeai
+requests
+python-dotenv
+vaderSentiment==3.3.2
+
