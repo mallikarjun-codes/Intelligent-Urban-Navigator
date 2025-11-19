@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import CityMap from './components/CityMap';
-import { Search, Sparkles, Navigation, MapPin, ShieldCheck, ShieldAlert, Zap } from 'lucide-react';
+import { Sparkles, MapPin, ShieldCheck, ShieldAlert, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -19,10 +19,10 @@ function App() {
   const [cityQuery, setCityQuery] = useState('');
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [locationData, setLocationData] = useState({ 
-    lat: null, 
-    lng: null, 
-    name: "Locating..." 
+  const [locationData, setLocationData] = useState({
+    lat: null,
+    lng: null,
+    name: "Locating..."
   });
   // --- NEW --- Safety Score State
   const [safetyData, setSafetyData] = useState(null);
@@ -32,106 +32,8 @@ function App() {
   const [routeOverlay, setRouteOverlay] = useState(null);
   const [vibeMap, setVibeMap] = useState({});
   const [activeVibePlace, setActiveVibePlace] = useState(null);
-  const [userId] = useState(() => {
-    if (typeof window === 'undefined') return 'kyc-guest';
-    const stored = localStorage.getItem('kyc_user_id');
-    if (stored) return stored;
-    const globalCrypto = window.crypto || null;
-    const generated = `kyc-${globalCrypto?.randomUUID ? globalCrypto.randomUUID() : Date.now()}`;
-    localStorage.setItem('kyc_user_id', generated);
-    return generated;
-  });
 
   const GEOCODER_ENDPOINT = import.meta.env.VITE_GEOCODER_ENDPOINT || 'https://photon.komoot.io/api';
-  const metersBetween = (lat1, lng1, lat2, lng2) => {
-    const R = 6371000;
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-
-  const refreshHiddenGems = async () => {
-    try {
-      const res = await axios.get('http://127.0.0.1:5000/api/gems', {
-        params: { userId }
-      });
-      setGems(res.data.gems || []);
-      setUnlockedGemIds(res.data.unlocked || []);
-      setBadges(res.data.badges || []);
-    } catch (error) {
-      console.error('Hidden gems fetch error', error);
-    }
-  };
-
-  const refreshLeaderboard = async () => {
-    try {
-      const res = await axios.get('http://127.0.0.1:5000/api/gems/leaderboard');
-      setLeaderboard(res.data.leaderboard || []);
-    } catch (error) {
-      console.error('Leaderboard fetch error', error);
-    }
-  };
-
-  const unlockGemAtCoords = async (lat, lng) => {
-    try {
-      const res = await axios.post('http://127.0.0.1:5000/api/gems/unlock', {
-        userId,
-        coords: { lat, lng }
-      });
-      setUnlockedGemIds(res.data.unlockedIds || []);
-      setBadges(res.data.badges || []);
-      setLeaderboard(res.data.leaderboard || []);
-      if (!res.data.alreadyUnlocked) {
-        setGemToast({
-          gem: res.data.gem,
-          badge: res.data.badges?.slice(-1)[0],
-        });
-      }
-    } catch (error) {
-      console.error('Unlock gem error', error);
-    }
-  };
-
-  const handleManualGemUnlock = (gem) => {
-    if (!gem) return;
-    setFocusPoint({ lat: gem.lat, lng: gem.lng, label: gem.name, zoom: 16 });
-    unlockGemAtCoords(gem.lat, gem.lng);
-  };
-
-  useEffect(() => {
-    refreshHiddenGems();
-    refreshLeaderboard();
-  }, [userId]);
-
-  useEffect(() => {
-    if (!navigator.geolocation || gems.length === 0) return;
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        gems.forEach((gem) => {
-          if (unlockedGemIds.includes(gem.id)) return;
-          const dist = metersBetween(latitude, longitude, gem.lat, gem.lng);
-          if (dist <= gem.radius_m) {
-            unlockGemAtCoords(latitude, longitude);
-          }
-        });
-      },
-      (err) => console.warn('Gem geo error', err),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-    );
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [gems, unlockedGemIds, userId]);
-
-  useEffect(() => {
-    if (!gemToast) return;
-    const timer = setTimeout(() => setGemToast(null), 5000);
-    return () => clearTimeout(timer);
-  }, [gemToast]);
-
   // Auto-detect on load
   useEffect(() => {
     if (navigator.geolocation) {
@@ -352,18 +254,6 @@ function App() {
         {/* Background Blobs */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-300/30 rounded-full blur-3xl animate-float" />
         <div className="absolute top-20 -right-40 w-80 h-80 bg-purple-300/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
-        {gemToast && (
-          <div className="fixed top-6 right-6 bg-white shadow-2xl border border-green-200 rounded-2xl px-5 py-4 z-50 w-72">
-            <div className="font-semibold text-green-600 flex items-center gap-2">
-              <Award size={16} /> Hidden Gem Unlocked!
-            </div>
-            <p className="text-sm text-gray-700 mt-1">{gemToast.gem?.name}</p>
-            {gemToast.badge && (
-              <p className="text-xs text-gray-500 mt-1">Badge earned: {gemToast.badge}</p>
-            )}
-          </div>
-        )}
-
         <section className="container mx-auto px-6 py-10 text-center relative z-10">
           
           {/* HEADER */}
@@ -532,69 +422,6 @@ function App() {
                   routeOverlay={routeOverlay}
                 />
              </motion.div>
-          )}
-
-          {gems.length > 0 && (
-            <div className="mt-12 bg-white/80 border border-gray-200 rounded-3xl shadow-xl p-6 text-left">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-semibold flex items-center gap-2">
-                    <Sparkles size={20} className="text-purple-500" /> Hidden Gem Hunt
-                  </h3>
-                  <p className="text-sm text-gray-500">Move within 20m of a gem to unlock badges and climb the leaderboard.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <div className="bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2">
-                    <Award size={16} /> Badges: {badges.length}
-                  </div>
-                  <div className="bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2">
-                    <Crown size={16} /> Leaderboard: {leaderboard[0]?.count || 0} pts top
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {gems.map((gem) => {
-                  const unlocked = unlockedGemIds.includes(gem.id);
-                  return (
-                    <div
-                      key={gem.id}
-                      className={`rounded-2xl border p-4 flex flex-col gap-2 ${unlocked ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-900">{gem.name}</p>
-                          <p className="text-xs text-gray-500">{gem.hint}</p>
-                        </div>
-                        <span className="text-xs font-bold text-gray-400">{unlocked ? 'Unlocked' : `${gem.radius_m}m radius`}</span>
-                      </div>
-                      <button
-                        onClick={() => handleManualGemUnlock(gem)}
-                        className="text-sm text-blue-600 underline self-start disabled:text-gray-400"
-                        disabled={unlocked}
-                      >
-                        {unlocked ? 'Pinned on map' : 'Mark as found'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6">
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2 text-sm">
-                  <Crown size={16} /> Leaderboard
-                </h4>
-                <div className="mt-2 space-y-2">
-                  {leaderboard.length === 0 && <p className="text-sm text-gray-500">No explorers yet.</p>}
-                  {leaderboard.map((entry, idx) => (
-                    <div key={entry.userId} className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-xl">
-                      <span>#{idx + 1} {entry.userId.replace('kyc-', 'User ')}</span>
-                      <span className="font-semibold">{entry.count} gems</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           )}
         </section>
       </main>
