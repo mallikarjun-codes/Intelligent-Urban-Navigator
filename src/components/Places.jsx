@@ -81,18 +81,23 @@ const Places = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-10">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Enhanced Background Blobs */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-blue-400/40 via-indigo-400/30 to-purple-400/20 dark:from-blue-500/20 dark:via-indigo-500/15 dark:to-purple-500/10 rounded-full blur-3xl animate-float" />
+      <div className="absolute top-20 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/40 via-pink-400/30 to-blue-400/20 dark:from-purple-500/20 dark:via-pink-500/15 dark:to-blue-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-gradient-to-br from-indigo-400/30 via-blue-400/20 to-cyan-400/20 dark:from-indigo-500/15 dark:via-blue-500/10 dark:to-cyan-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '6s' }} />
+      
+      <div className="container mx-auto px-6 py-10 relative z-10">
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl md:text-5xl font-extrabold mb-2 text-center"
         >
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
             Popular Places in {locationData.name}
           </span>
         </motion.h1>
-        <p className="text-center text-gray-600 mb-8">Discover the best spots to visit</p>
+        <p className="text-center text-gray-600 dark:text-gray-300 mb-8">Discover the best spots to visit</p>
 
         {loading ? (
           <div className="text-center py-20">
@@ -114,20 +119,20 @@ const Places = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
                   onClick={() => handlePlaceClick(place)}
-                  className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all hover:scale-105 border border-gray-100"
+                  className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all hover:scale-105 border border-gray-100 dark:border-gray-700"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                      <h3 className="font-bold text-lg text-gray-900">{place.name}</h3>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{place.name}</h3>
                     </div>
                   </div>
-                  {place.address && (
-                    <p className="text-sm text-gray-600 mb-3">{place.address}</p>
-                  )}
-                  {place.note && (
-                    <p className="text-sm text-gray-700 italic">{place.note}</p>
-                  )}
+                    {place.address && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{place.address}</p>
+                    )}
+                    {place.note && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 italic">{place.note}</p>
+                    )}
                   <button className="mt-4 text-blue-600 text-sm font-semibold flex items-center gap-1 hover:text-blue-800">
                     <Navigation size={14} />
                     View on Map
@@ -142,8 +147,8 @@ const Places = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-12"
               >
-                <h2 className="text-2xl font-bold mb-4 text-gray-900">Map View</h2>
-                <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Map View</h2>
+                <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
                   <CityMap
                     lat={locationData.lat}
                     lng={locationData.lng}

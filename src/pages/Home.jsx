@@ -257,9 +257,10 @@ function Home() {
 
   return (
     <main className="flex-grow relative overflow-hidden pb-20">
-      {/* Background Blobs */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-300/30 rounded-full blur-3xl animate-float" />
-      <div className="absolute top-20 -right-40 w-80 h-80 bg-purple-300/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+      {/* Enhanced Background Blobs with gradients */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-blue-400/40 via-indigo-400/30 to-purple-400/20 dark:from-blue-500/20 dark:via-indigo-500/15 dark:to-purple-500/10 rounded-full blur-3xl animate-float" />
+      <div className="absolute top-20 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/40 via-pink-400/30 to-blue-400/20 dark:from-purple-500/20 dark:via-pink-500/15 dark:to-blue-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-gradient-to-br from-indigo-400/30 via-blue-400/20 to-cyan-400/20 dark:from-indigo-500/15 dark:via-blue-500/10 dark:to-cyan-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '6s' }} />
       <section className="container mx-auto px-6 py-10 text-center relative z-10">
         
         {/* HEADER */}
@@ -268,7 +269,7 @@ function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="text-5xl md:text-6xl font-extrabold leading-tight"
         >
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
             Discover {locationData.name}
           </span>
         </motion.h1>
@@ -327,15 +328,15 @@ function Home() {
           </motion.div>
         )}
 
-        {/* MAIN AI SEARCH */}
-        <div className="mt-4 mx-auto bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200 p-2 flex items-center space-x-3 max-w-2xl">
+          {/* MAIN AI SEARCH */}
+          <div className="mt-4 mx-auto bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 flex items-center space-x-3 max-w-2xl transition-colors duration-300">
           <input 
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={`Ask anything about ${locationData.name}...`}
-            className="flex-1 px-5 py-3 text-lg bg-transparent outline-none text-gray-700"
+              placeholder={`Ask anything about ${locationData.name}...`}
+              className="flex-1 px-5 py-3 text-lg bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
           />
           <button 
             onClick={handleSearch}
@@ -356,7 +357,7 @@ function Home() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.25 }}
-              className="mt-8 bg-white rounded-2xl shadow-xl p-6 text-left max-w-3xl mx-auto border border-gray-100"
+              className="mt-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 text-left max-w-3xl mx-auto border border-gray-100 dark:border-gray-700 transition-colors duration-300"
             >
               <div className="flex items-center gap-2 mb-4 text-blue-600">
                 <Sparkles size={20} />
