@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Navigation } from 'lucide-react';
+import { MapPin, Star, Navigation, BookmarkPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import CityMap from './CityMap';
+import { useAuth } from '../contexts/AuthContext';
+import { addFavoritePlace } from '../utils/userData';
 
 const Places = () => {
   const [locationData, setLocationData] = useState({ lat: null, lng: null, name: "Loading..." });
@@ -10,8 +12,11 @@ const Places = () => {
   const [loading, setLoading] = useState(true);
   const [focusPoint, setFocusPoint] = useState(null);
   const [selectedPlace, setSelectedPlace] = useState(null);
+  const { user, openAuthModal } = useAuth();
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
+    if (!user) return;
     // Load city from localStorage (set by App.jsx)
     const savedCity = localStorage.getItem('selectedCity');
     if (savedCity) {
@@ -37,7 +42,7 @@ const Places = () => {
         fetchPopularPlaces("India", 20.5937, 78.9629);
       }
     }
-  }, []);
+  }, [user]);
 
   const fetchCityName = async (lat, lng) => {
     try {
@@ -80,6 +85,42 @@ const Places = () => {
     setFocusPoint({ lat: place.lat, lng: place.lng, label: place.name, zoom: 15 });
   };
 
+  const handleSaveFavorite = (place) => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    addFavoritePlace(user.id, {
+      name: place.name,
+      address: place.address || locationData.name,
+      lat: place.lat,
+      lng: place.lng,
+    });
+    setSaveMessage(`“${place.name}” saved to favorites.`);
+    setTimeout(() => setSaveMessage(''), 3000);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-6">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-10 text-center max-w-xl">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            Explore Places
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            Sign in to view curated places for your selected city and save favorites to your dashboard.
+          </p>
+          <button
+            onClick={() => openAuthModal('login')}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition"
+          >
+            Login to continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Enhanced Background Blobs */}
@@ -98,6 +139,11 @@ const Places = () => {
           </span>
         </motion.h1>
         <p className="text-center text-gray-600 dark:text-gray-300 mb-8">Discover the best spots to visit</p>
+        {saveMessage && (
+          <div className="max-w-2xl mx-auto mb-6 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm rounded-2xl px-4 py-3 border border-green-100 dark:border-green-800">
+            {saveMessage}
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20">
@@ -133,10 +179,22 @@ const Places = () => {
                     {place.note && (
                       <p className="text-sm text-gray-700 dark:text-gray-300 italic">{place.note}</p>
                     )}
-                  <button className="mt-4 text-blue-600 text-sm font-semibold flex items-center gap-1 hover:text-blue-800">
-                    <Navigation size={14} />
-                    View on Map
-                  </button>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handlePlaceClick(place)}
+                      className="text-blue-600 dark:text-blue-300 text-sm font-semibold flex items-center gap-1 hover:text-blue-800 dark:hover:text-blue-200"
+                    >
+                      <Navigation size={14} />
+                      View on Map
+                    </button>
+                    <button
+                      onClick={() => handleSaveFavorite(place)}
+                      className="text-purple-600 dark:text-purple-300 text-sm font-semibold flex items-center gap-1 hover:text-purple-800 dark:hover:text-purple-200"
+                    >
+                      <BookmarkPlus size={14} />
+                      Save to Favorites
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>

@@ -1,4 +1,10 @@
 {
-  "users": []
+  "users": [
+    {
+      "id": "c24bac6a-2fe0-46f2-b9a1-8c3a9322fc62",
+      "name": "Sarvesh Madawal",
+      "email": "madawalsarvesh@gmail.com",
+      "password_hash": "5d4296b6b73fdb8c200c01cfe0668838c027a11b2a9062b7a4615c749ad1915e"
+    }
+  ]
 }
-

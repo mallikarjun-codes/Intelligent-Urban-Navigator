@@ -4,13 +4,21 @@ import { Sparkles, MapPin, ShieldCheck, ShieldAlert, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import { useAuth } from '../contexts/AuthContext';
+import { addSearchHistory } from '../utils/userData';
 
 const markdownComponents = {
-  p: ({ children }) => <p className="mb-4">{children}</p>,
-  strong: ({ children }) => <span className="font-semibold text-gray-900">{children}</span>,
-  ul: ({ children }) => <ul className="list-disc pl-6 space-y-2">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal pl-6 space-y-2">{children}</ol>,
-  li: ({ children }) => <li className="text-gray-700">{children}</li>,
+  p: ({ children }) => <p className="mb-4 text-gray-700 dark:text-gray-200">{children}</p>,
+  strong: ({ children }) => (
+    <span className="font-semibold text-gray-900 dark:text-gray-100">{children}</span>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-200">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-200">{children}</ol>
+  ),
+  li: ({ children }) => <li className="text-gray-700 dark:text-gray-200">{children}</li>,
 };
 
 function Home() {
@@ -30,11 +38,13 @@ function Home() {
   const [routeOverlay, setRouteOverlay] = useState(null);
   const [vibeMap, setVibeMap] = useState({});
   const [activeVibePlace, setActiveVibePlace] = useState(null);
+  const { user, openAuthModal } = useAuth();
 
   const GEOCODER_ENDPOINT = import.meta.env.VITE_GEOCODER_ENDPOINT || 'https://photon.komoot.io/api';
   
   // Auto-detect on load
   useEffect(() => {
+    if (!user) return;
     // Check if city is saved in localStorage
     const savedCity = localStorage.getItem('selectedCity');
     if (savedCity) {
@@ -54,7 +64,7 @@ function Home() {
         }
       );
     }
-  }, []);
+  }, [user]);
 
   // Helper: Gets City Name AND Safety Score
   const fetchLocationDetails = async (lat, lng) => {
@@ -114,6 +124,10 @@ function Home() {
 
   // Manual City Search
   const handleManualCitySearch = async (selection) => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
     const explicit = selection || citySuggestions[0];
     const searchTerm = selection ? selection.name : cityQuery;
     if (!searchTerm) return;
@@ -154,6 +168,7 @@ function Home() {
   };
 
   useEffect(() => {
+    if (!user) return;
     if (!cityQuery || cityQuery.length < 3) {
       setCitySuggestions([]);
       return;
@@ -162,7 +177,7 @@ function Home() {
       fetchPhotonSuggestions(cityQuery);
     }, 350);
     return () => clearTimeout(handler);
-  }, [cityQuery]);
+  }, [cityQuery, user]);
 
   const handleFocusPlace = (place) => {
     if (!place?.lat || !place?.lng) return;
@@ -216,6 +231,10 @@ function Home() {
 
   // AI Query
   const handleSearch = async () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
     if (!query) return;
     if (!locationData.lat || !locationData.lng) {
       alert("Please wait until your location is detected before asking.");
@@ -240,6 +259,10 @@ function Home() {
         locations: res.data.locations || []
       };
       setResponse(payload);
+      addSearchHistory(user.id, {
+        query,
+        location: locationData.name,
+      });
     } catch (error) {
       const message = error.response?.data?.error || "Backend request failed. Check that the Flask server is running.";
       setResponse({ answer_text: `Error: ${message}`, locations: [] });
@@ -284,6 +307,17 @@ function Home() {
           and explore your city with confidence.
         </motion.p>
 
+        {!user && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mt-6 max-w-2xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-200 text-sm rounded-2xl px-4 py-3 border border-yellow-100 dark:border-yellow-800"
+          >
+            Please log in to unlock personalized AI search, safety insights, and saved places.
+          </motion.div>
+        )}
+
         {/* --- MANUAL CITY SELECTOR --- */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -302,6 +336,7 @@ function Home() {
                 type="text" 
                 placeholder="Change City..." 
                 className="outline-none text-sm text-gray-700 flex-1"
+                disabled={!user}
                 value={cityQuery}
                 onChange={(e) => setCityQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleManualCitySearch()}
@@ -309,6 +344,7 @@ function Home() {
               <button 
                 onClick={() => handleManualCitySearch()}
                 className="bg-gray-900 text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-gray-700 transition"
+                disabled={!user}
               >
                 SET
               </button>
@@ -381,12 +417,13 @@ function Home() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder={`Ask anything about ${locationData.name}...`}
-              className="flex-1 px-5 py-3 text-lg bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
+              className="flex-1 px-5 py-3 text-lg bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-60"
+              disabled={!user}
           />
           <button 
             onClick={handleSearch}
-            disabled={loading}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl px-6 py-3 font-medium hover:shadow-lg transition flex items-center gap-2"
+            disabled={loading || !user}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl px-6 py-3 font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-60"
           >
             {loading ? 'Thinking...' : <><Zap size={20}/> Ask AI</>}
           </button>

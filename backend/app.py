@@ -517,6 +517,7 @@ def classify_vibe(score: float):
 
 # --- API ENDPOINT 1: THE AI BRAIN ---
 @app.route('/api/query', methods=['POST'])
+@require_auth
 def handle_query():
     data = request.get_json()
     user_query = data.get('query')
@@ -605,6 +606,7 @@ def handle_query():
 
 # --- API ENDPOINT 2: THE SAFETY SCORE ---
 @app.route('/api/safety', methods=['POST'])
+@require_auth
 def handle_safety():
     data = request.get_json()
     lat = data.get('lat')
@@ -618,6 +620,7 @@ def handle_safety():
 
 
 @app.route('/api/vibe', methods=['GET'])
+@require_auth
 def handle_vibe():
     place_id = request.args.get("placeId")
     place_name = request.args.get("name") or place_id
@@ -655,6 +658,7 @@ def handle_vibe():
 
 
 @app.route('/api/gems', methods=['GET'])
+@require_auth
 def list_gems():
     profile = get_user_progress(g.current_user["id"])
     unlocked = profile.get("unlocked", [])
@@ -667,11 +671,13 @@ def list_gems():
 
 
 @app.route('/api/gems/leaderboard', methods=['GET'])
+@require_auth
 def gems_leaderboard():
     return jsonify({"leaderboard": compute_leaderboard()})
 
 
 @app.route('/api/gems/unlock', methods=['POST'])
+@require_auth
 def unlock_gem():
     data = request.get_json() or {}
     coords = data.get("coords") or {}
@@ -711,6 +717,7 @@ def unlock_gem():
 
 
 @app.route('/api/routes', methods=['POST'])
+@require_auth
 def handle_routes():
     """
     Computes a 'fast' walking route plus a safety analysis overlay.
