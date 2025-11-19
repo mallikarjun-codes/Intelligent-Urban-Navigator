@@ -273,9 +273,28 @@ function Home() {
             Discover {locationData.name}
           </span>
         </motion.h1>
+        
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+        >
+          Your intelligent urban navigation companion. Get AI-powered insights, discover hidden gems, 
+          and explore your city with confidence.
+        </motion.p>
 
         {/* --- MANUAL CITY SELECTOR --- */}
-        <div className="mt-6 flex justify-center items-center gap-2">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mt-8"
+        >
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Want to explore a different city? Search and select below:
+          </p>
+          <div className="flex justify-center items-center gap-2">
           <div className="relative w-80">
             <div className="bg-white p-1 pl-4 rounded-full shadow-md border border-gray-200 flex items-center">
               <MapPin size={16} className="text-gray-400 mr-2" />
@@ -315,20 +334,46 @@ function Home() {
             )}
           </div>
         </div>
+        </motion.div>
 
         {/* --- SAFETY SCORE DISPLAY --- */}
         {safetyData && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className={`mt-4 flex justify-center items-center gap-2 font-bold ${getSafetyColor(safetyData.score)}`}
+            className="mt-6"
           >
-            {safetyData.score > 50 ? <ShieldCheck /> : <ShieldAlert />}
-            <span>{safetyData.analysis} (Score: {safetyData.score})</span>
-            <span className="text-gray-400 font-normal text-xs">({safetyData.details})</span>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              Current Location Safety Analysis:
+            </p>
+            <div className={`flex justify-center items-center gap-2 font-bold ${getSafetyColor(safetyData.score)}`}>
+              {safetyData.score > 50 ? <ShieldCheck /> : <ShieldAlert />}
+              <span>{safetyData.analysis} (Score: {safetyData.score})</span>
+              <span className="text-gray-400 dark:text-gray-500 font-normal text-xs">({safetyData.details})</span>
+            </div>
           </motion.div>
         )}
 
-          {/* MAIN AI SEARCH */}
+        {/* MAIN AI SEARCH */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8"
+        >
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Ask our AI assistant anything about {locationData.name}. Try questions like:
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 mb-4 text-xs">
+            <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full">
+              "best restaurants near me"
+            </span>
+            <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full">
+              "tourist attractions"
+            </span>
+            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-full">
+              "safety tips"
+            </span>
+          </div>
           <div className="mt-4 mx-auto bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 flex items-center space-x-3 max-w-2xl transition-colors duration-300">
           <input 
             type="text"
@@ -346,6 +391,7 @@ function Home() {
             {loading ? 'Thinking...' : <><Zap size={20}/> Ask AI</>}
           </button>
         </div>
+        </motion.div>
 
         {/* AI ANSWER */}
         <AnimatePresence>
@@ -359,10 +405,13 @@ function Home() {
               transition={{ duration: 0.25 }}
               className="mt-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 text-left max-w-3xl mx-auto border border-gray-100 dark:border-gray-700 transition-colors duration-300"
             >
-              <div className="flex items-center gap-2 mb-4 text-blue-600">
+              <div className="flex items-center gap-2 mb-4 text-blue-600 dark:text-blue-400">
                 <Sparkles size={20} />
                 <span className="font-bold">AI Insights ({locationData.name})</span>
               </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Our AI has analyzed your query and provided personalized recommendations based on your location.
+              </p>
               {response.weather && (
                 <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700 flex flex-wrap gap-3">
                   <span className="font-semibold">🌦️ {response.weather.description}</span>
@@ -372,16 +421,21 @@ function Home() {
                 </div>
               )}
               {response.locations && response.locations.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {response.locations.map((place, idx) => (
-                    <button
-                      key={`${place.name}-${idx}`}
-                      onClick={() => handleFocusPlace(place)}
-                      className="px-3 py-1.5 rounded-full border border-blue-200 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 transition"
-                    >
-                      📍 {place.name}
-                    </button>
-                  ))}
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Recommended Places (Click to view on map):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {response.locations.map((place, idx) => (
+                      <button
+                        key={`${place.name}-${idx}`}
+                        onClick={() => handleFocusPlace(place)}
+                        className="px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
+                      >
+                        📍 {place.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {activeVibePlace && vibeMap[activeVibePlace.toLowerCase()] && (
@@ -402,7 +456,7 @@ function Home() {
                   Service note: {response.error}
                 </div>
               )}
-              <div className="text-gray-700 text-lg leading-relaxed">
+              <div className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
                 <ReactMarkdown components={markdownComponents}>
                   {response.answer_text}
                 </ReactMarkdown>
@@ -411,15 +465,24 @@ function Home() {
           )}
         </AnimatePresence>
 
-        {/* 3D MAP */}
+        {/* INTERACTIVE MAP */}
         {locationData.lat && (
            <motion.div 
               layout
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-12 max-w-5xl mx-auto"
+              transition={{ delay: 0.4 }}
+              className="mt-16 max-w-5xl mx-auto"
            >
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  Interactive City Map
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
+                  Explore {locationData.name} on our interactive map. Click on any place from AI recommendations 
+                  to see it highlighted, or use the map to discover new locations around you.
+                </p>
+              </div>
               <CityMap
                 lat={locationData.lat}
                 lng={locationData.lng}

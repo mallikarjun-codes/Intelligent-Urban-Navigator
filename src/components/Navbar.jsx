@@ -44,6 +44,12 @@ const Navbar = () => {
             >
               Places
             </Link>
+            <Link 
+              to="/about" 
+              className={`transition ${location.pathname === '/about' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'}`}
+            >
+              About
+            </Link>
             <button className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white px-4 py-2 rounded-lg shadow-lg hover:scale-105 transition">
               Login
             </button>
